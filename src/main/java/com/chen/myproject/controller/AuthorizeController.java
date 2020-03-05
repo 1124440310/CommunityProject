@@ -2,6 +2,8 @@ package com.chen.myproject.controller;
 
 import com.chen.myproject.dto.AccessTokenDTO;
 import com.chen.myproject.dto.GitHubUser;
+import com.chen.myproject.mapper.UserMapper;
+import com.chen.myproject.model.User;
 import com.chen.myproject.provider.GitHubProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.UUID;
 
 
 @Controller
@@ -20,8 +23,11 @@ public class AuthorizeController {
     @Value("${github.client.id}")
     private String clientId;
 
-    @Value("{github.client.secret}")
+    @Value("${github.client.secret}")
     private String clientSecret;
+
+    @Autowired
+    UserMapper userMapper;
 
     @GetMapping("/callback")
     public String callback(@RequestParam("code")String code,
@@ -37,15 +43,21 @@ public class AuthorizeController {
         accessTokenDTO.setCode(code);
 
         String token = provider.getAccessToken(accessTokenDTO);
-        GitHubUser user = provider.getUser(token);
+        GitHubUser gitHubUser = provider.getUser(token);
 
-        if (user.getName()==null){
-            user.setName("你没有名字");
-        }
+        if (gitHubUser!=null){
+            User user = new User();
 
-        if (user!=null){
+            user.setToken(UUID.randomUUID().toString());
+            user.setName(gitHubUser.getName());
+            user.setAccountId(String.valueOf(gitHubUser.getId()));
+            user.setGmtCreate(System.currentTimeMillis());
+            user.setGmtModified(user.getGmtCreate());
+
+            userMapper.insert(user);
+
             //登录成功，写cookie，session
-            request.getSession().setAttribute("user",user);
+            request.getSession().setAttribute("user",gitHubUser);
             return "redirect:/";   //重定向是访问地址
         }else {
             //登录失败，重新登录

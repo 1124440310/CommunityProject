@@ -22,10 +22,9 @@ public class GitHubProvider {
                 .build();
         try (Response response = client.newCall(request).execute()) {
             String string = response.body().string();
-            //access_token=e72e16c7e42f292c6912e7710c838347ae178b4a&token_type=bearer
+            //access_token=e72e16c7e234324326912e7710c838347ae178b4a&token_type=bearer
             String[] split = string.split("&");
             String[] result = split[0].split("=");
-
             return result[1];
         } catch (IOException e) {
             e.printStackTrace();
@@ -42,8 +41,10 @@ public class GitHubProvider {
                 .build();
 
         GitHubUser user = null;
+
         try(Response response = client.newCall(request).execute();) {
             String res =response.body().string();
+
             user = JSON.parseObject(res, GitHubUser.class);
             return user;
         } catch (IOException e) {
